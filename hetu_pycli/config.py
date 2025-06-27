@@ -5,6 +5,7 @@ from pathlib import Path
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.hetucli/config.yml")
 DEFAULT_CONFIG = {
     "chain": "ws://127.0.0.1:8545",
+    "json_rpc": "http://127.0.0.1:8545",
     "network": "local",
     "no_cache": False,
     "wallet_hotkey": "hotkey-user1",

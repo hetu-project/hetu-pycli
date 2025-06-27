@@ -3,6 +3,7 @@ from typer import Typer
 from hetu_pycli.src.commands.wallet import wallet_app
 from hetu_pycli.src.commands.tx import tx_app
 from hetu_pycli.src.commands.contract import contract_app
+from hetu_pycli.src.commands.config import config_app
 from hetu_pycli.config import load_config, ensure_config_file
 from hetu_pycli.version import __version__
 
@@ -11,15 +12,13 @@ app = Typer(
     no_args_is_help=True,
 )
 
-
 @app.callback()
 def main_callback(
+    ctx: typer.Context,
     version: bool = typer.Option(
         None,
         "--version",
-        callback=lambda v: (print(__version__), raise_exit())
-        if v
-        else None,
+        callback=lambda v: (print(__version__), raise_exit()) if v else None,
         is_eager=True,
         help="Show version and exit.",
     ),
@@ -44,16 +43,27 @@ def main_callback(
         wallet_path=wallet_path,
     )
     config_obj = load_config(config, cli_args)
-    typer.Context.obj = config_obj
+    ctx.obj = config_obj
 
 
 def raise_exit():
     raise typer.Exit()
 
 
-app.add_typer(wallet_app, name="wallet", help="Wallet management")
-app.add_typer(tx_app, name="tx", help="Transfer & transaction")
-app.add_typer(contract_app, name="contract", help="Contract operations")
+app.add_typer(
+    wallet_app,
+    name="wallet",
+    help="Wallet management",
+    no_args_is_help=True,
+)
+app.add_typer(wallet_app, name="w", hidden=True, no_args_is_help=True)
+app.add_typer(tx_app, name="tx", help="Transfer & transaction", no_args_is_help=True)
+app.add_typer(
+    contract_app, name="contract", help="Contract operations", no_args_is_help=True
+)
+app.add_typer(config_app, name="config", help="Config management", no_args_is_help=True)
+app.add_typer(config_app, name="c", hidden=True, no_args_is_help=True)
+app.add_typer(config_app, name="conf", hidden=True, no_args_is_help=True)
 
 if __name__ == "__main__":
     app()
