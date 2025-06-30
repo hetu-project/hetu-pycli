@@ -4,6 +4,7 @@ from hetu_pycli.src.commands.wallet import wallet_app
 from hetu_pycli.src.commands.tx import tx_app
 from hetu_pycli.src.commands.contract import contract_app
 from hetu_pycli.src.commands.config import config_app
+from hetu_pycli.src.hetu.erc20 import erc20_app
 from hetu_pycli.config import load_config, ensure_config_file
 from hetu_pycli.version import __version__
 
@@ -64,6 +65,7 @@ app.add_typer(
 app.add_typer(config_app, name="config", help="Config management", no_args_is_help=True)
 app.add_typer(config_app, name="c", hidden=True, no_args_is_help=True)
 app.add_typer(config_app, name="conf", hidden=True, no_args_is_help=True)
+app.add_typer(erc20_app, name="erc20", help="ERC20 token operations", no_args_is_help=True)
 
 if __name__ == "__main__":
     app()
