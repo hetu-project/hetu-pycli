@@ -39,10 +39,11 @@ def create(
     password: str = typer.Option(
         None, help="Password for keystore (prompt if not set)"
     ),
+    wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
 ):
     """Create a new wallet and save as keystore file with name"""
     config = ctx.obj
-    wallet_path = get_wallet_path(config)
+    wallet_path = wallet_path or get_wallet_path(config)
     os.makedirs(wallet_path, exist_ok=True)
     if not password:
         password = getpass.getpass("Set wallet password: ")

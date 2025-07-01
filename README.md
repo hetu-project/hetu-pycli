@@ -111,6 +111,15 @@ hetucli contract call --address <contract_addr> --abi-path <abi.json> --function
 
 ---
 
+## Running Tests & Development
+To run the tests, ensure you have the Hetu CLI installed and configured. Then, execute:
+
+```bash
+poetry run pytest tests
+```
+
+---
+
 ## License
 
 This project is licensed under the MIT License.

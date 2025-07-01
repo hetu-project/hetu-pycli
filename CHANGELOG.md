@@ -13,3 +13,5 @@
 - New config command to show current settings in JSON format
 - New command to set configuration values
 - New command to reset configuration to default values
+- New command to create a new wallet with a specified name and password
+- New command to unlock a wallet with a password
