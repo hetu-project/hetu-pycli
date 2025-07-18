@@ -11,6 +11,10 @@ DEFAULT_CONFIG = {
     "wallet_hotkey": "hotkey-user1",
     "wallet_name": "coldkey-user1",
     "wallet_path": os.path.expanduser("~/.hetucli/wallets"),
+    "whetu_address": "0x0000000000000000000000000000000000000000",
+    "subnet_address": "0x0000000000000000000000000000000000000000",
+    "staking_address": "0x0000000000000000000000000000000000000000",
+    "amm_address": "0x0000000000000000000000000000000000000000",
     "metagraph_cols": {
         "ACTIVE": True,
         "AXON": True,

@@ -104,6 +104,41 @@ hetucli wallet balance <address> --rpc <rpc_url>
 hetucli tx send --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
 ```
 
+### Configuration
+
+Set the contract address
+
+```bash
+hetucli c set whetu_address <address>
+hetucli c set staking_address <address>
+hetucli c set subnet_address <address>
+hetucli c set whetu_address <address>
+```
+
+### WHETU
+
+```bash
+hetucli whetu deposit --contract <address> --sender <address> --value <amount>
+hetucli whetu withdraw --contract <address> --sender <address> --amount <amount>
+hetucli whetu balance-of --contract <address> --account <address>
+hetucli whetu transfer --contract <address> --to <address> --value <amount> --sender <address>
+hetucli whetu approve --contract <address> --spender <address> --value <amount> --sender <address>
+hetucli whetu total-eth --contract <address>
+hetucli whetu total-supply --contract <address>
+hetucli whetu nonces --contract <address> --owner <address>
+```
+
+### Staking, Subnet, Swap
+
+```bash
+hetucli stake total-staked --contract <address>
+hetucli stake add-stake --contract <address> --sender <address> --amount <amount>
+hetucli subnet next-netuid --contract <address>
+hetucli subnet register-network --contract <address> --sender <address> --name ... --description ... --token-name ... --token-symbol ...
+hetucli amm alpha-price --contract <address>
+hetucli amm swap-hetu-for-alpha --contract <address> --sender <address> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
+```
+
 ### Contract call
 ```bash
 hetucli contract call --address <contract_addr> --abi-path <abi.json> --function <fn> --args "1,2,3" --rpc <rpc_url>
