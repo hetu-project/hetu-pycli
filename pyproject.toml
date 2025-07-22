@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hetu-pycli"
-version = "0.1.0"
+version = "0.1.1"
 description = "A command-line interface for Hetu Chain interactions"
 authors = ["Hetu Protocol"]
 readme = "README.md"
@@ -14,6 +14,7 @@ rich = "^14.0.0"
 pyyaml = "^6.0.2"
 requests = "^2.31.0"
 pytest = "^8.4.1"
+twine = "^6.1.0"
 
 [tool.poetry.scripts]
 hetucli = "hetu_pycli.cli:app"

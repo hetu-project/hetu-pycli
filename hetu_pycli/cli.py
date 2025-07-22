@@ -9,12 +9,14 @@ from hetu_pycli.src.hetu.whetu import whetu_app
 from hetu_pycli.src.hetu.staking import staking_app
 from hetu_pycli.src.hetu.subnet import subnet_app
 from hetu_pycli.src.hetu.amm import amm_app
-from hetu_pycli.config import load_config, ensure_config_file
+from hetu_pycli.src.hetu.neuron import neuron_app
+from hetu_pycli.config import load_config, ensure_config_file, _epilog
 from hetu_pycli.version import __version__
 
 app = Typer(
     help="Hetu chain command line client",
     no_args_is_help=True,
+    epilog=_epilog
 )
 
 @app.callback()
@@ -60,20 +62,22 @@ app.add_typer(
     name="wallet",
     help="Wallet management",
     no_args_is_help=True,
+    epilog=_epilog
 )
 app.add_typer(wallet_app, name="w", hidden=True, no_args_is_help=True)
-app.add_typer(tx_app, name="tx", help="Transfer & transaction", no_args_is_help=True)
+app.add_typer(tx_app, name="tx", help="Transfer & transaction", no_args_is_help=True, epilog=_epilog)
 app.add_typer(
-    contract_app, name="contract", help="Contract operations", no_args_is_help=True
+    contract_app, name="contract", help="Contract operations", no_args_is_help=True, epilog=_epilog
 )
-app.add_typer(config_app, name="config", help="Config management", no_args_is_help=True)
+app.add_typer(config_app, name="config", help="Config management", no_args_is_help=True, epilog=_epilog)
 app.add_typer(config_app, name="c", hidden=True, no_args_is_help=True)
 app.add_typer(config_app, name="conf", hidden=True, no_args_is_help=True)
-app.add_typer(erc20_app, name="erc20", help="ERC20 token operations", no_args_is_help=True)
-app.add_typer(whetu_app, name="whetu", help="WHETU contract operations", no_args_is_help=True)
-app.add_typer(staking_app, name="stake", help="Global staking operations", no_args_is_help=True)
-app.add_typer(subnet_app, name="subnet", help="Subnet manager operations", no_args_is_help=True)
-app.add_typer(amm_app, name="amm", help="Subnet AMM operations", no_args_is_help=True)
+app.add_typer(erc20_app, name="erc20", help="ERC20 token operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(whetu_app, name="whetu", help="WHETU contract operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(staking_app, name="stake", help="Global staking operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(subnet_app, name="subnet", help="Subnet manager operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(amm_app, name="amm", help="Subnet AMM operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(neuron_app, name="neuron", help="Neuron manager operations", no_args_is_help=True, epilog=_epilog)
 
 if __name__ == "__main__":
     app()

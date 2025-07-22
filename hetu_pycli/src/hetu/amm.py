@@ -40,7 +40,7 @@ def alpha_price(
 ):
     """Query current alpha price"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -54,12 +54,13 @@ def pool_info(
 ):
     """Query pool info"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     amm = load_amm(contract, rpc)
-    print(f"[green]Pool Info: {amm.getPoolInfo()}")
+    pool = amm.getPoolInfo()
+    print(f"[green]Pool Info: \n- mechanism: {pool[0]}\n- subnetTAO: {pool[1]}\n- subnetAlphaIn: {pool[2]}\n- subnetAlphaOut: {pool[3]}\n- currentPrice: {pool[4]}\n- movingPrice: {pool[5]}\n- totalVolume: {pool[6]}\n- minimumLiquidity: {pool[7]}")
 
 @amm_app.command()
 def statistics(
@@ -68,7 +69,7 @@ def statistics(
 ):
     """Query pool statistics"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -84,7 +85,7 @@ def swap_preview(
 ):
     """Preview swap result and price impact"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -100,7 +101,7 @@ def sim_swap_alpha_for_hetu(
 ):
     """Simulate swap ALPHA for HETU"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -116,7 +117,7 @@ def sim_swap_hetu_for_alpha(
 ):
     """Simulate swap HETU for ALPHA"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -186,7 +187,7 @@ def withdraw_liquidity(
 ):
     """Withdraw liquidity from the pool"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -236,7 +237,7 @@ def swap_alpha_for_hetu(
 ):
     """Swap ALPHA for HETU"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
@@ -286,7 +287,7 @@ def swap_hetu_for_alpha(
 ):
     """Swap HETU for ALPHA"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
-    contract = get_contract_address(ctx, "amm", contract)
+    contract = get_contract_address(ctx, "amm_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)

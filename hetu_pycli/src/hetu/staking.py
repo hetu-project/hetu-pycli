@@ -3,6 +3,7 @@ from rich import print
 from web3 import Web3
 import json
 import os
+from hetu_pycli.src.hetu.erc20 import load_erc20
 from hetu_pycli.src.hetu.wrapper.global_staking import GlobalStaking
 from eth_account import Account
 from hetu_pycli.src.commands.wallet import load_keystore, get_wallet_path
@@ -45,12 +46,18 @@ def total_staked(
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     staking = load_staking(contract, rpc)
-    print(f"[green]Total Staked: {staking.getTotalStaked()}")
+    all_staking = staking.getTotalStaked()
+    whetu = staking.hetuToken()
+    erc20 = load_erc20(whetu, rpc)
+    decimals = erc20.decimals()
+    value = all_staking / (10 ** decimals)
+    value_str = f"{value:,.{decimals}f}".rstrip('0').rstrip('.')
+    print(f"[green]Total Staked: {value_str} (raw: {all_staking}, decimals: {decimals})")
 
 @staking_app.command()
 def stake_info(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     user: str = typer.Option(..., help="User address to query"),
 ):
     """Query stake info for a user"""
@@ -58,6 +65,7 @@ def stake_info(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
     print(f"[green]Stake Info: {staking.getStakeInfo(user)}")
 
@@ -111,7 +119,7 @@ def add_stake(
 @staking_app.command()
 def remove_stake(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     sender: str = typer.Option(..., help="Sender address (must match keystore address or wallet name)"),
     wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
     password: str = typer.Option(None, hide_input=True, help="Keystore password"),
@@ -122,6 +130,7 @@ def remove_stake(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     config = ctx.obj
     wallet_path = wallet_path or get_wallet_path(config)
     keystore = load_keystore(sender, wallet_path)
@@ -140,7 +149,7 @@ def remove_stake(
         {
             "from": from_address,
             "nonce": nonce,
-            "gas": 200000,
+            "gas": 500000,
             "gasPrice": staking.web3.eth.gas_price,
         }
     )
@@ -157,7 +166,7 @@ def remove_stake(
 @staking_app.command()
 def claim_rewards(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     sender: str = typer.Option(..., help="Sender address (must match keystore address or wallet name)"),
     wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
     password: str = typer.Option(None, hide_input=True, help="Keystore password"),
@@ -167,6 +176,7 @@ def claim_rewards(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     config = ctx.obj
     wallet_path = wallet_path or get_wallet_path(config)
     keystore = load_keystore(sender, wallet_path)
@@ -201,7 +211,7 @@ def claim_rewards(
 @staking_app.command()
 def available_stake(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
@@ -210,13 +220,14 @@ def available_stake(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
     print(f"[green]Available Stake: {staking.getAvailableStake(user, netuid)}")
 
 @staking_app.command()
 def effective_stake(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
@@ -225,13 +236,14 @@ def effective_stake(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
     print(f"[green]Effective Stake: {staking.getEffectiveStake(user, netuid)}")
 
 @staking_app.command()
 def locked_stake(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
@@ -240,13 +252,14 @@ def locked_stake(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
     print(f"[green]Locked Stake: {staking.getLockedStake(user, netuid)}")
 
 @staking_app.command()
 def allocate_to_subnet(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     sender: str = typer.Option(..., help="Sender address (must match keystore address or wallet name)"),
     wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
     password: str = typer.Option(None, hide_input=True, help="Keystore password"),
@@ -258,6 +271,7 @@ def allocate_to_subnet(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     config = ctx.obj
     wallet_path = wallet_path or get_wallet_path(config)
     keystore = load_keystore(sender, wallet_path)
@@ -276,7 +290,7 @@ def allocate_to_subnet(
         {
             "from": from_address,
             "nonce": nonce,
-            "gas": 200000,
+            "gas": 500000,
             "gasPrice": staking.web3.eth.gas_price,
         }
     )
@@ -293,7 +307,7 @@ def allocate_to_subnet(
 @staking_app.command()
 def subnet_allocation(
     ctx: typer.Context,
-    contract: str = typer.Option(..., help="Staking contract address"),
+    contract: str = typer.Option(None, help="Staking contract address"),
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
@@ -302,5 +316,6 @@ def subnet_allocation(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
     print(f"[green]Subnet Allocation: {staking.getSubnetAllocation(user, netuid)}") 

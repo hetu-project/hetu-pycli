@@ -2,6 +2,8 @@ import os
 import yaml
 from pathlib import Path
 
+_epilog = "Made with ❤️  by The Hetu protocol"
+
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.hetucli/config.yml")
 DEFAULT_CONFIG = {
     "chain": "ws://127.0.0.1:8545",
@@ -15,6 +17,7 @@ DEFAULT_CONFIG = {
     "subnet_address": "0x0000000000000000000000000000000000000000",
     "staking_address": "0x0000000000000000000000000000000000000000",
     "amm_address": "0x0000000000000000000000000000000000000000",
+    "neuron_address": "0x0000000000000000000000000000000000000000",
     "metagraph_cols": {
         "ACTIVE": True,
         "AXON": True,

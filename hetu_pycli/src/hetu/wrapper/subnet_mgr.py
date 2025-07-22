@@ -30,6 +30,13 @@ class SubnetMgr:
         """
         return self.contract.functions.getNetworkLockCost().call()
 
+    def getNetworkParams(self, ):
+        """
+        Call getNetworkParams()
+        :return: [{'internalType': 'uint256', 'name': 'minLock', 'type': 'uint256'}, {'internalType': 'uint256', 'name': 'lastLock', 'type': 'uint256'}, {'internalType': 'uint256', 'name': 'lastLockBlock', 'type': 'uint256'}, {'internalType': 'uint256', 'name': 'rateLimit', 'type': 'uint256'}, {'internalType': 'uint256', 'name': 'reductionInterval', 'type': 'uint256'}, {'internalType': 'uint16', 'name': 'totalNets', 'type': 'uint16'}, {'internalType': 'uint16', 'name': 'nextId', 'type': 'uint16'}]
+        """
+        return self.contract.functions.getNetworkParams().call()
+
     def getNextNetuid(self, ):
         """
         Call getNextNetuid()
@@ -205,6 +212,13 @@ class SubnetMgr:
         """
         return self.contract.functions.renounceOwnership().call()
 
+    def resetNetworkLockState(self, ):
+        """
+        Call resetNetworkLockState()
+        :return: []
+        """
+        return self.contract.functions.resetNetworkLockState().call()
+
     def subnetExists(self, arg0):
         """
         Call subnetExists(arg0)
@@ -243,6 +257,25 @@ class SubnetMgr:
         :return: []
         """
         return self.contract.functions.transferOwnership(newOwner).call()
+
+    def updateNetworkParams(self, _networkMinLock, _networkRateLimit, _lockReductionInterval):
+        """
+        Call updateNetworkParams(_networkMinLock, _networkRateLimit, _lockReductionInterval)
+        :param _networkMinLock: uint256 (solidity name: '_networkMinLock')
+        :param _networkRateLimit: uint256 (solidity name: '_networkRateLimit')
+        :param _lockReductionInterval: uint256 (solidity name: '_lockReductionInterval')
+        :return: []
+        """
+        return self.contract.functions.updateNetworkParams(_networkMinLock, _networkRateLimit, _lockReductionInterval).call()
+
+    def updateSubnetHyperparams(self, netuid, newHyperparams):
+        """
+        Call updateSubnetHyperparams(netuid, newHyperparams)
+        :param netuid: uint16 (solidity name: 'netuid')
+        :param newHyperparams: tuple (solidity name: 'newHyperparams')
+        :return: []
+        """
+        return self.contract.functions.updateSubnetHyperparams(netuid, newHyperparams).call()
 
     def updateSubnetInfo(self, netuid, newName, newDescription):
         """

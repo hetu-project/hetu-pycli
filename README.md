@@ -42,6 +42,7 @@ You can install `hetucli` on your local machine directly from source or PyPI. **
 Run
 ```bash
 pip install -U hetu-pycli
+hetucli --help
 ```
 
 ### Install from source
@@ -112,7 +113,41 @@ Set the contract address
 hetucli c set whetu_address <address>
 hetucli c set staking_address <address>
 hetucli c set subnet_address <address>
-hetucli c set whetu_address <address>
+hetucli c set neuron_address <address>
+hetucli c set amm_address <address>
+```
+
+### Main Process(New,Staking,Swap)
+
+#### New A Subnet
+
+```bash
+hetucli w import <private-key> --name test0
+hetucli whetu deposit  --sender test0 --value  1000
+hetucli whetu balance-of  test0
+hetucli subnet get-network-lock-cost
+hetucli whetu approve --spender <subnet_address>  --value 100 --sender test0 
+hetucli subnet update-network-params --network-min-lock 100000000000000000000  --network-rate-limit 1 --lock-reduction-interval 10000  --sender <address>
+hetucli subnet regist --sender test0 --name "AI Vision" --description "Computre vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+```
+#### Staking and Participation
+
+```bash
+hetucli whetu approve --spender <stake_address>  --value 100 --sender test0
+hetucli stake add-stake --sender test0 --amount 100
+hetucli stake total-staked
+hetucli stake allocate-to-subnet --netuid 1  --sender test0 --amount 50
+hetucli neuron regist --sender test0 --netuid 1 --is-validator-role  --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+```
+
+#### Trading Subnet Tokens
+
+```bash
+hetucli subnet subnet-info --netuid 1 
+hetucli c set amm_address <amm_pool_address>
+hetucli amm pool-info
+hetucli whetu approve --spender 0xa16E02E87b7454126E5E10d957A927A7F5B5d2be  --value 100 --sender test0
+hetucli amm swap-hetu-for-alpha --hetu-amount-in  100 --alpha-amount-out-min 0   --sender test0 --to <to-address>
 ```
 
 ### WHETU
