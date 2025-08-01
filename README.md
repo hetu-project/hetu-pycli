@@ -102,7 +102,11 @@ hetucli wallet balance <address> --rpc <rpc_url>
 
 ### Transfer
 ```bash
-hetucli tx send --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
+# 使用钱包名称（推荐）
+hetucli tx send --sender <wallet_name> --to <address> --value <hetu> --rpc <rpc_url>
+
+# 直接使用私钥（不推荐，私钥会暴露在命令行历史中）
+hetucli tx send-dk --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
 ```
 
 ### Configuration
@@ -153,25 +157,25 @@ hetucli amm swap-hetu-for-alpha --hetu-amount-in  100 --alpha-amount-out-min 0  
 ### WHETU
 
 ```bash
-hetucli whetu deposit --contract <address> --sender <address> --value <amount>
-hetucli whetu withdraw --contract <address> --sender <address> --amount <amount>
-hetucli whetu balance-of --contract <address> --account <address>
-hetucli whetu transfer --contract <address> --to <address> --value <amount> --sender <address>
-hetucli whetu approve --contract <address> --spender <address> --value <amount> --sender <address>
-hetucli whetu total-eth --contract <address>
-hetucli whetu total-supply --contract <address>
-hetucli whetu nonces --contract <address> --owner <address>
+hetucli whetu deposit --sender <wallet_name> --value <amount>
+hetucli whetu withdraw --sender <wallet_name> --amount <amount>
+hetucli whetu balance-of <wallet_name_or_address>
+hetucli whetu transfer --to <address> --value <amount> --sender <wallet_name>
+hetucli whetu approve --spender <address> --value <amount> --sender <wallet_name>
+hetucli whetu total-eth
+hetucli whetu total-supply
+hetucli whetu nonces --owner <address>
 ```
 
 ### Staking, Subnet, Swap
 
 ```bash
-hetucli stake total-staked --contract <address>
-hetucli stake add-stake --contract <address> --sender <address> --amount <amount>
-hetucli subnet next-netuid --contract <address>
-hetucli subnet register-network --contract <address> --sender <address> --name ... --description ... --token-name ... --token-symbol ...
-hetucli amm alpha-price --contract <address>
-hetucli amm swap-hetu-for-alpha --contract <address> --sender <address> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
+hetucli stake total-staked
+hetucli stake add-stake --sender <wallet_name> --amount <amount>
+hetucli subnet next-netuid
+hetucli subnet regist --sender <wallet_name> --name <name> --description <description> --token-name <token_name> --token-symbol <token_symbol>
+hetucli amm alpha-price
+hetucli amm swap-hetu-for-alpha --sender <wallet_name> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
 ```
 
 ### Contract call

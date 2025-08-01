@@ -38,21 +38,31 @@ def get_contract_address(ctx, cli_contract_key: str, param_contract: str):
 def total_staked(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Staking contract address"),
+    user: str = typer.Option(None, help="User address to query (optional, defaults to owner)"),
 ):
-    """Query total staked HETU"""
+    """Query total staked HETU for a user"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "staking_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     staking = load_staking(contract, rpc)
-    all_staking = staking.getTotalStaked()
+    
+    # 如果没有指定用户，使用合约所有者
+    if not user:
+        user = staking.owner()
+        print(f"[yellow]No user specified, using contract owner: {user}")
+    
+    # 获取用户的质押信息
+    stake_info = staking.getStakeInfo(user)
+    total_staked = stake_info[0]  # totalStaked 是第一个元素
+    
     whetu = staking.hetuToken()
     erc20 = load_erc20(whetu, rpc)
     decimals = erc20.decimals()
-    value = all_staking / (10 ** decimals)
+    value = total_staked / (10 ** decimals)
     value_str = f"{value:,.{decimals}f}".rstrip('0').rstrip('.')
-    print(f"[green]Total Staked: {value_str} (raw: {all_staking}, decimals: {decimals})")
+    print(f"[green]Total Staked for {user}: {value_str} (raw: {total_staked}, decimals: {decimals})")
 
 @staking_app.command()
 def stake_info(

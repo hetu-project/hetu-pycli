@@ -177,18 +177,23 @@ def neurons(
 def can_register_neuron(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Neuron manager contract address"),
-    user: str = typer.Option(..., help="User address"),
+    user: str = typer.Option(..., help="User address to check"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    is_validator_role: bool = typer.Option(..., help="Is validator role?"),
+    is_validator_role: bool = typer.Option(..., help="Is validator role"),
 ):
-    """Check if user can register neuron"""
+    """Check if a user can register as a neuron"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "neuron_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     mgr = load_neuron_mgr(contract, rpc)
-    print(f"[green]Can Register Neuron: {mgr.canRegisterNeuron(user, netuid, is_validator_role)}")
+    
+    # 由于 ABI 中没有 canRegisterNeuron 函数，我们显示基本信息
+    print(f"[yellow]Checking registration eligibility for user {user} on subnet {netuid}")
+    print(f"[yellow]Validator role: {is_validator_role}")
+    print(f"[yellow]Note: canRegisterNeuron function not available in current ABI")
+    print(f"[yellow]Please check subnet status and user stake allocation manually")
 
 @neuron_app.command(
     name="regist"
@@ -205,6 +210,7 @@ def register_neuron(
     axon_port: int = typer.Option(..., help="Axon port (uint32)"),
     prometheus_endpoint: str = typer.Option(..., help="Prometheus endpoint"),
     prometheus_port: int = typer.Option(..., help="Prometheus port (uint32)"),
+    stake_amount: float = typer.Option(100.0, help="Stake amount in HETU (default: 100)"),
 ):
     """Register a neuron (write tx)"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -225,8 +231,13 @@ def register_neuron(
     mgr = load_neuron_mgr(contract, rpc)
     from_address = keystore["address"]
     nonce = mgr.web3.eth.get_transaction_count(from_address)
-    tx = mgr.contract.functions.registerNeuron(
-        netuid, is_validator_role, axon_endpoint, axon_port, prometheus_endpoint, prometheus_port
+    
+    # 转换质押金额为 wei
+    stake_amount_wei = mgr.web3.to_wei(stake_amount, "ether")
+    print(f"[yellow]Using stake amount: {stake_amount} HETU ({stake_amount_wei} wei)")
+    
+    tx = mgr.contract.functions.registerNeuronWithStakeAllocation(
+        netuid, stake_amount_wei, is_validator_role, axon_endpoint, axon_port, prometheus_endpoint, prometheus_port
     ).build_transaction(
         {
             "from": from_address,

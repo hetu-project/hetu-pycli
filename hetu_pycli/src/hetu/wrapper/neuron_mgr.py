@@ -18,16 +18,6 @@ class NeuronMgr:
         """
         return self.contract.functions.batchUpdateStakeAllocations(netuid, accounts, newStakes).call()
 
-    def canRegisterNeuron(self, user, netuid, isValidatorRole):
-        """
-        Call canRegisterNeuron(user, netuid, isValidatorRole)
-        :param user: address (solidity name: 'user')
-        :param netuid: uint16 (solidity name: 'netuid')
-        :param isValidatorRole: bool (solidity name: 'isValidatorRole')
-        :return: [{'internalType': 'bool', 'name': '', 'type': 'bool'}]
-        """
-        return self.contract.functions.canRegisterNeuron(user, netuid, isValidatorRole).call()
-
     def deregisterNeuron(self, netuid):
         """
         Call deregisterNeuron(netuid)
@@ -149,6 +139,20 @@ class NeuronMgr:
         :return: []
         """
         return self.contract.functions.registerNeuron(netuid, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
+
+    def registerNeuronWithStakeAllocation(self, netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort):
+        """
+        Call registerNeuronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort)
+        :param netuid: uint16 (solidity name: 'netuid')
+        :param stakeAmount: uint256 (solidity name: 'stakeAmount')
+        :param isValidatorRole: bool (solidity name: 'isValidatorRole')
+        :param axonEndpoint: string (solidity name: 'axonEndpoint')
+        :param axonPort: uint32 (solidity name: 'axonPort')
+        :param prometheusEndpoint: string (solidity name: 'prometheusEndpoint')
+        :param prometheusPort: uint32 (solidity name: 'prometheusPort')
+        :return: []
+        """
+        return self.contract.functions.registerNeuronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
 
     def renounceOwnership(self, ):
         """
