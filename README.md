@@ -102,10 +102,10 @@ hetucli wallet balance <address> --rpc <rpc_url>
 
 ### Transfer
 ```bash
-# 使用钱包名称（推荐）
+# Using wallet name (recommended)
 hetucli tx send --sender <wallet_name> --to <address> --value <hetu> --rpc <rpc_url>
 
-# 直接使用私钥（不推荐，私钥会暴露在命令行历史中）
+# Direct private key usage (not recommended, private key will be exposed in command history)
 hetucli tx send-dk --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
 ```
 
@@ -132,8 +132,22 @@ hetucli whetu balance-of  test0
 hetucli subnet get-network-lock-cost
 hetucli whetu approve --spender <subnet_address>  --value 100 --sender test0 
 hetucli subnet update-network-params --network-min-lock 100000000000000000000  --network-rate-limit 1 --lock-reduction-interval 10000  --sender <address>
-hetucli subnet regist --sender test0 --name "AI Vision" --description "Computre vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
 ```
+
+#### Activate Subnet
+
+```bash
+# Check subnet status
+hetucli subnet subnet-info --netuid <netuid>
+
+# Activate the subnet
+hetucli subnet activate-subnet --netuid <netuid> --sender <wallet_name>
+
+# Verify activation status
+hetucli subnet subnet-info --netuid <netuid>
+```
+
 #### Staking and Participation
 
 ```bash
