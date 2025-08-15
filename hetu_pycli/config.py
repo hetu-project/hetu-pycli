@@ -7,7 +7,7 @@ _epilog = "Made with ❤️  by The Hetu protocol"
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.hetucli/config.yml")
 DEFAULT_CONFIG = {
     "chain": "ws://127.0.0.1:9090",
-    "json_rpc": "http://161.97.161.133:8545",
+    "json_rpc": "http://161.97.161.133:18545",
     "network": "local",
     "no_cache": False,
     "wallet_hotkey": "hotkey-user1",

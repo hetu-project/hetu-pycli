@@ -6,6 +6,7 @@ from hetu_pycli.src.commands.contract import contract_app
 from hetu_pycli.src.commands.config import config_app
 from hetu_pycli.src.hetu.erc20 import erc20_app
 from hetu_pycli.src.hetu.whetu import whetu_app
+from hetu_pycli.src.hetu.hetu import hetu_app
 from hetu_pycli.src.hetu.staking import staking_app
 from hetu_pycli.src.hetu.subnet import subnet_app
 from hetu_pycli.src.hetu.amm import amm_app
@@ -73,6 +74,7 @@ app.add_typer(config_app, name="config", help="Config management", no_args_is_he
 app.add_typer(config_app, name="c", hidden=True, no_args_is_help=True)
 app.add_typer(config_app, name="conf", hidden=True, no_args_is_help=True)
 app.add_typer(erc20_app, name="erc20", help="ERC20 token operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(hetu_app, name="hetu", help="Native HETU operations", no_args_is_help=True, epilog=_epilog)
 app.add_typer(whetu_app, name="whetu", help="WHETU contract operations", no_args_is_help=True, epilog=_epilog)
 app.add_typer(staking_app, name="stake", help="Global staking operations", no_args_is_help=True, epilog=_epilog)
 app.add_typer(subnet_app, name="subnet", help="Subnet manager operations", no_args_is_help=True, epilog=_epilog)

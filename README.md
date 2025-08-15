@@ -133,6 +133,7 @@ hetucli subnet get-network-lock-cost
 hetucli whetu approve --spender <subnet_address>  --value 100 --sender test0 
 hetucli subnet update-network-params --network-min-lock 100000000000000000000  --network-rate-limit 1 --lock-reduction-interval 10000  --sender <address>
 hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+hetucli subnet get-subnet-hyperparams --netuid <netuid>
 ```
 
 #### Activate Subnet
@@ -188,6 +189,7 @@ hetucli stake total-staked
 hetucli stake add-stake --sender <wallet_name> --amount <amount>
 hetucli subnet next-netuid
 hetucli subnet regist --sender <wallet_name> --name <name> --description <description> --token-name <token_name> --token-symbol <token_symbol>
+hetucli subnet get-subnet-hyperparams --netuid <netuid>
 hetucli amm alpha-price
 hetucli amm swap-hetu-for-alpha --sender <wallet_name> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
 ```

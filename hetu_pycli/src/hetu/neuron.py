@@ -38,7 +38,7 @@ def get_neuron_info(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Neuron manager contract address"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    account: str = typer.Option(..., help="Neuron account address"),
+    account: str = typer.Option(..., help="Neuron account address or wallet name"),
 ):
     """Query neuron info by netuid and account"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -46,6 +46,21 @@ def get_neuron_info(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = account
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(account, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{account}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {account}")
+            raise typer.Exit(1)
+        account = address
+    
     mgr = load_neuron_mgr(contract, rpc)
     print(f"[green]Neuron Info: {mgr.getNeuronInfo(netuid, account)}")
 
@@ -114,7 +129,7 @@ def is_neuron(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Neuron manager contract address"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    account: str = typer.Option(..., help="Neuron account address"),
+    account: str = typer.Option(..., help="Neuron account address or wallet name"),
 ):
     """Check if account is a neuron in subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -122,6 +137,21 @@ def is_neuron(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = account
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(account, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{account}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {account}")
+            raise typer.Exit(1)
+        account = address
+    
     mgr = load_neuron_mgr(contract, rpc)
     print(f"[green]Is Neuron: {mgr.isNeuron(netuid, account)}")
 
@@ -130,7 +160,7 @@ def is_validator(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Neuron manager contract address"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    account: str = typer.Option(..., help="Neuron account address"),
+    account: str = typer.Option(..., help="Neuron account address or wallet name"),
 ):
     """Check if account is a validator in subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -138,6 +168,21 @@ def is_validator(
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = account
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(account, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{account}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {account}")
+            raise typer.Exit(1)
+        account = address
+    
     mgr = load_neuron_mgr(contract, rpc)
     print(f"[green]Is Validator: {mgr.isValidator(netuid, account)}")
 
@@ -179,7 +224,7 @@ def can_register_neuron(
     contract: str = typer.Option(None, help="Neuron manager contract address"),
     user: str = typer.Option(..., help="User address to check"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    is_validator_role: bool = typer.Option(..., help="Is validator role"),
+    is_validator_role: bool = typer.Option(False, "--is-validator-role/--no-validator-role", help="Is validator role"),
 ):
     """Check if a user can register as a neuron"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -205,7 +250,7 @@ def register_neuron(
     wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
     password: str = typer.Option(None, hide_input=True, help="Keystore password"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
-    is_validator_role: bool = typer.Option(..., help="Is validator role?"),
+    is_validator_role: bool = typer.Option(False, "--is-validator-role/--no-validator-role", help="Is validator role?"),
     axon_endpoint: str = typer.Option(..., help="Axon endpoint"),
     axon_port: int = typer.Option(..., help="Axon port (uint32)"),
     prometheus_endpoint: str = typer.Option(..., help="Prometheus endpoint"),

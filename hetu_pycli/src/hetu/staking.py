@@ -38,7 +38,7 @@ def get_contract_address(ctx, cli_contract_key: str, param_contract: str):
 def total_staked(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Staking contract address"),
-    user: str = typer.Option(None, help="User address to query (optional, defaults to owner)"),
+    user: str = typer.Argument(None, help="User address or wallet name to query (optional, defaults to owner)"),
 ):
     """Query total staked HETU for a user"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
@@ -52,6 +52,20 @@ def total_staked(
     if not user:
         user = staking.owner()
         print(f"[yellow]No user specified, using contract owner: {user}")
+    else:
+        # 如果指定了用户，检查是否是钱包名称并转换为地址
+        address = user
+        config = ctx.obj
+        wallet_path = get_wallet_path(config)
+        if not (address.startswith('0x') and len(address) == 42):
+            try:
+                keystore = load_keystore(user, wallet_path)
+                address = keystore.get("address")
+                print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+            except Exception:
+                print(f"[red]Wallet not found: {user}")
+                raise typer.Exit(1)
+        user = address
     
     # 获取用户的质押信息
     stake_info = staking.getStakeInfo(user)
@@ -77,6 +91,21 @@ def stake_info(
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Stake Info: {staking.getStakeInfo(user)}")
 
 @staking_app.command()
@@ -225,14 +254,29 @@ def available_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query available stake for a user in a subnet"""
+    """Query available stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
-    print(f"[green]Available Stake: {staking.getAvailableStake(user, netuid)}")
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
+    print(f"[green]Available Stake: {staking.getAvailableStake(user)}")
 
 @staking_app.command()
 def effective_stake(
@@ -241,13 +285,28 @@ def effective_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query effective stake for a user in a subnet"""
+    """Query effective stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Effective Stake: {staking.getEffectiveStake(user, netuid)}")
 
 @staking_app.command()
@@ -257,13 +316,28 @@ def locked_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query locked stake for a user in a subnet"""
+    """Query locked stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Locked Stake: {staking.getLockedStake(user, netuid)}")
 
 @staking_app.command()
@@ -328,4 +402,19 @@ def subnet_allocation(
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Subnet Allocation: {staking.getSubnetAllocation(user, netuid)}") 
