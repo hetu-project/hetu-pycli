@@ -11,6 +11,7 @@ from hetu_pycli.src.hetu.staking import staking_app
 from hetu_pycli.src.hetu.subnet import subnet_app
 from hetu_pycli.src.hetu.amm import amm_app
 from hetu_pycli.src.hetu.dendron import dendron_app
+from hetu_pycli.src.hetu.weights import weights_app
 from hetu_pycli.config import load_config, ensure_config_file, _epilog
 from hetu_pycli.version import __version__
 
@@ -80,6 +81,7 @@ app.add_typer(staking_app, name="stake", help="Global staking operations", no_ar
 app.add_typer(subnet_app, name="subnet", help="Subnet manager operations", no_args_is_help=True, epilog=_epilog)
 app.add_typer(amm_app, name="amm", help="Subnet AMM operations", no_args_is_help=True, epilog=_epilog)
 app.add_typer(dendron_app, name="dendron", help="Dendron manager operations", no_args_is_help=True, epilog=_epilog)
+app.add_typer(weights_app, name="weights", help="Weights manager operations", no_args_is_help=True, epilog=_epilog)
 
 if __name__ == "__main__":
     app()

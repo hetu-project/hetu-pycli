@@ -135,30 +135,32 @@ def export_privkey(
 )
 def balance(
     ctx: typer.Context,
-    name_or_address: str = typer.Argument(..., help="Wallet name or address"),
-    rpc: str = typer.Option(None, help="Hetu node RPC URL"),
+    wallet_name: str = typer.Argument(..., help="Wallet name (username)"),
+    rpc: str = typer.Option(None, help="Hetu node RPC URL (optional, uses default from config if not provided)"),
 ):
-    """Query address balance by wallet name or address"""
+    """Query address balance by wallet name"""
     config = ctx.obj
     rpc_url = rpc or (config.get("json_rpc") if config else None)
     if not rpc_url:
         print("[red]No RPC URL provided or found in config.")
         raise typer.Exit(1)
     wallet_path = get_wallet_path(config)
-    # Try to resolve address if name is given
-    address = name_or_address
-    if not (address.startswith('0x') and len(address) == 42):
-        try:
-            keystore = load_keystore(name_or_address, wallet_path)
-            address = keystore.get("address")
-        except Exception:
-            print(f"[red]Wallet not found: {name_or_address}")
-            raise typer.Exit(1)
+    
+    # Load keystore by wallet name
+    try:
+        keystore = load_keystore(wallet_name, wallet_path)
+        address = keystore.get("address")
+        print(f"[yellow]Wallet '{wallet_name}' address: {address}")
+    except Exception:
+        print(f"[red]Wallet not found: {wallet_name}")
+        raise typer.Exit(1)
+    
     w3 = Web3(Web3.HTTPProvider(rpc_url))
     bal = w3.eth.get_balance(address)
     ether = w3.from_wei(bal, 'ether')
     ether_str = f"{ether:,.18f}".rstrip('0').rstrip('.')
-    print(f"[cyan]Balance: {ether_str} HETU ({address})")
+    print(f"[cyan]Balance: {ether_str} HETU")
+    print(f"[cyan]Address: {address}")
 
 
 @wallet_app.command(

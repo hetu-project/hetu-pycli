@@ -97,16 +97,18 @@ hetucli --help
 ### Wallet management
 ```bash
 hetucli wallet create
-hetucli wallet balance <address> --rpc <rpc_url>
+hetucli wallet balance <wallet_name>
+hetucli wallet list
+hetucli wallet import <private-key> --name <wallet_name>
 ```
 
 ### Transfer
 ```bash
 # Using wallet name (recommended)
-hetucli tx send --sender <wallet_name> --to <address> --value <hetu> --rpc <rpc_url>
+hetucli tx send --sender <wallet_name> --to <address> --value <hetu>
 
 # Direct private key usage (not recommended, private key will be exposed in command history)
-hetucli tx send-dk --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
+hetucli tx send-dk --private-key <key> --to <address> --value <hetu>
 ```
 
 ### Configuration
@@ -119,6 +121,7 @@ hetucli c set staking_address <address>
 hetucli c set subnet_address <address>
 hetucli c set dendron_address <address>
 hetucli c set amm_address <address>
+hetucli c set weights_address <address>
 ```
 
 ### Main Process(New,Staking,Swap)
@@ -127,21 +130,14 @@ hetucli c set amm_address <address>
 
 ```bash
 hetucli w import <private-key> --name test0
-hetucli hetu balance-of test0
+hetucli wallet balance test0
 hetucli whetu deposit  --sender test0 --value  1000
-hetucli whetu balance-of  test0
-hetucli subnet get-network-lock-cost
+hetucli wallet balance test0
 hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
-hetucli subnet get-subnet-hyperparams --netuid <netuid>
 
 # Activate the subnet
 hetucli subnet activate-subnet --netuid <netuid> --sender test0
 
-# Verify activation status
-hetucli subnet subnet-info --netuid <netuid>
-```
-
-#### Activate Subnet
 
 ```bash
 # Check subnet status
@@ -165,6 +161,12 @@ hetucli dendron regist --sender test0 --netuid 1 --is-validator-role --axon-endp
 
 # Register as regular dendron (non-validator)
 hetucli dendron regist --sender test0 --netuid 1 --no-validator-role --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Check user role in subnet
+hetucli dendron get-user-role --netuid 1 --user test0
+
+# Query user's created subnets
+hetucli subnet user-subnets --sender test0
 ```
 
 #### Trading Subnet Tokens
@@ -177,12 +179,31 @@ hetucli whetu approve --spender 0xa16E02E87b7454126E5E10d957A927A7F5B5d2be  --va
 hetucli amm swap-hetu-for-alpha --hetu-amount-in  100 --alpha-amount-out-min 0   --sender test0 --to <to-address>
 ```
 
+#### Validator Scoring (Weights)
+
+```bash
+# Set contract address
+hetucli c set weights_address <weights_contract_address>
+
+# Create a weights template file
+hetucli weights create-weights-template --output-file my_weights.json
+
+# Set weights for nodes in a subnet (validator only)
+hetucli weights set-weights --sender test0 --netuid 1 --weights-file my_weights.json
+
+# Quick score command for testing (direct input)
+hetucli weights quick-score --sender test0 --netuid 1 --targets "0x1234...,0x5678..." --scores "500000,750000"
+
+# Query weights for a specific validator-destination pair
+hetucli weights get-weights --netuid 1 --validator 0x1234... --dest 0x5678...
+```
+
 ### WHETU
 
 ```bash
 hetucli whetu deposit --sender <wallet_name> --value <amount>
 hetucli whetu withdraw --sender <wallet_name> --amount <amount>
-hetucli whetu balance-of <wallet_name_or_address>
+hetucli wallet balance <wallet_name>
 hetucli whetu transfer --to <address> --value <amount> --sender <wallet_name>
 hetucli whetu approve --spender <address> --value <amount> --sender <wallet_name>
 hetucli whetu total-eth

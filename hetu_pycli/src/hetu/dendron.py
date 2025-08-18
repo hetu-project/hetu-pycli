@@ -393,7 +393,7 @@ def register_dendron(
     print(f"[yellow]Registering dendron with {mgr.web3.from_wei(required_stake_wei, 'ether')} HETU stake...")
     nonce = mgr.web3.eth.get_transaction_count(from_address)
     
-    tx = mgr.contract.functions.registerDendronWithStakeAllocation(
+    tx = mgr.contract.functions.registerNeuronWithStakeAllocation(
         netuid, required_stake_wei, is_validator_role, axon_endpoint, axon_port, prometheus_endpoint, prometheus_port
     ).build_transaction(
         {
@@ -443,8 +443,22 @@ def deregister_dendron(
         raise typer.Exit(1)
     mgr = load_dendron_mgr(contract, rpc)
     from_address = keystore["address"]
+    
+    # Use the wrapper method instead of direct contract call
+    try:
+        # First check if the dendron exists and is active
+        dendron_info = mgr.getDendronInfo(netuid, from_address)
+        if not dendron_info[2]:  # isActive field
+            print(f"[yellow]Dendron in subnet {netuid} is not active or doesn't exist")
+            raise typer.Exit(1)
+    except Exception as e:
+        print(f"[red]Failed to get dendron info: {e}")
+        raise typer.Exit(1)
+    
     nonce = mgr.web3.eth.get_transaction_count(from_address)
-    tx = mgr.contract.functions.deregisterDendron(netuid).build_transaction(
+    
+    # Build transaction using the wrapper method
+    tx = mgr.contract.functions.deregisterNeuron(netuid).build_transaction(
         {
             "from": from_address,
             "nonce": nonce,
@@ -461,3 +475,65 @@ def deregister_dendron(
         print(f"[green]Deregister dendron succeeded in block {receipt.blockNumber}")
     else:
         print(f"[red]Deregister dendron failed in block {receipt.blockNumber}, receipt {receipt}") 
+
+@dendron_app.command()
+def get_user_role(
+    ctx: typer.Context,
+    contract: str = typer.Option(None, help="Dendron manager contract address"),
+    netuid: int = typer.Option(..., help="Subnet netuid"),
+    user: str = typer.Option(..., help="User address or wallet name to check"),
+):
+    """Get user role in a subnet (validator, miner, or not registered)"""
+    rpc = ctx.obj.get("json_rpc") if ctx.obj else None
+    contract = get_contract_address(ctx, "dendron_address", contract)
+    if not rpc:
+        print("[red]No RPC URL found in config or CLI.")
+        raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
+    mgr = load_dendron_mgr(contract, rpc)
+    
+    try:
+        # 检查用户是否在子网中注册
+        dendron_info = mgr.getDendronInfo(netuid, address)
+        
+        # 检查是否激活
+        if not dendron_info[2]:  # isActive field
+            print(f"[yellow]User {address} is not active in subnet {netuid}")
+            print(f"[yellow]Status: Not registered or inactive")
+            return
+        
+        # 检查是否是验证者
+        is_validator = dendron_info[3]  # isValidator field
+        stake_amount = dendron_info[4]  # stake field
+        registration_block = dendron_info[5]  # registrationBlock field
+        
+        stake_hetu = mgr.web3.from_wei(stake_amount, "ether")
+        
+        if is_validator:
+            print(f"[green]User {address} in subnet {netuid}:")
+            print(f"[green]  Role: Validator")
+            print(f"[green]  Stake: {stake_hetu} HETU")
+            print(f"[green]  Registration Block: {registration_block}")
+        else:
+            print(f"[green]User {address} in subnet {netuid}:")
+            print(f"[green]  Role: Miner")
+            print(f"[green]  Stake: {stake_hetu} HETU")
+            print(f"[green]  Registration Block: {registration_block}")
+            
+    except Exception as e:
+        print(f"[yellow]User {address} is not registered in subnet {netuid}")
+        print(f"[yellow]Status: Not joined") 

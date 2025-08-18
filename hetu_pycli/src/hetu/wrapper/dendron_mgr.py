@@ -19,28 +19,28 @@ class DendronMgr:
 
     def getDendronInfo(self, netuid, account):
         """
-        Call getDendronInfo(netuid, account)
+        Call getNeuronInfo(netuid, account) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :param account: address (solidity name: 'account')
         :return: [{'components': [{'internalType': 'address', 'name': 'account', 'type': 'address'}, {'internalType': 'uint16', 'name': 'netuid', 'type': 'uint16'}, {'internalType': 'bool', 'name': 'isActive', 'type': 'bool'}, {'internalType': 'bool', 'name': 'isValidator', 'type': 'bool'}, {'internalType': 'uint256', 'name': 'stake', 'type': 'uint256'}, {'internalType': 'uint64', 'name': 'registrationBlock', 'type': 'uint64'}, {'internalType': 'uint256', 'name': 'lastUpdate', 'type': 'uint256'}, {'internalType': 'string', 'name': 'axonEndpoint', 'type': 'string'}, {'internalType': 'uint32', 'name': 'axonPort', 'type': 'uint32'}, {'internalType': 'string', 'name': 'prometheusEndpoint', 'type': 'string'}, {'internalType': 'uint32', 'name': 'prometheusPort', 'type': 'uint32'}], 'internalType': 'struct SubnetTypes.DendronInfo', 'name': '', 'type': 'tuple'}]
         """
-        return self.contract.functions.getDendronInfo(netuid, account).call()
+        return self.contract.functions.getNeuronInfo(netuid, account).call()
 
     def getSubnetDendronCount(self, netuid):
         """
-        Call getSubnetDendronCount(netuid)
+        Call getSubnetNeuronCount(netuid) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :return: [{'internalType': 'uint256', 'name': '', 'type': 'uint256'}]
         """
-        return self.contract.functions.getSubnetDendronCount(netuid).call()
+        return self.contract.functions.getSubnetNeuronCount(netuid).call()
 
     def getSubnetDendrons(self, netuid):
         """
-        Call getSubnetDendrons(netuid)
+        Call getSubnetNeurons(netuid) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :return: [{'internalType': 'address[]', 'name': '', 'type': 'address[]'}]
         """
-        return self.contract.functions.getSubnetDendrons(netuid).call()
+        return self.contract.functions.getSubnetNeurons(netuid).call()
 
     def getSubnetValidatorCount(self, netuid):
         """
@@ -67,12 +67,12 @@ class DendronMgr:
 
     def isDendron(self, netuid, account):
         """
-        Call isDendron(netuid, account)
+        Call isNeuron(netuid, account) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :param account: address (solidity name: 'account')
         :return: [{'internalType': 'bool', 'name': '', 'type': 'bool'}]
         """
-        return self.contract.functions.isDendron(netuid, account).call()
+        return self.contract.functions.isNeuron(netuid, account).call()
 
     def isValidator(self, netuid, account):
         """
@@ -85,12 +85,12 @@ class DendronMgr:
 
     def dendronList(self, arg0, arg1):
         """
-        Call dendronList(arg0, arg1)
+        Call neuronList(arg0, arg1) - keeping old ABI function name for compatibility
         :param arg0: uint16 (solidity name: 'arg0')
         :param arg1: uint256 (solidity name: 'arg1')
         :return: [{'internalType': 'address', 'name': '', 'type': 'address'}]
         """
-        return self.contract.functions.dendronList(arg0, arg1).call()
+        return self.contract.functions.neuronList(arg0, arg1).call()
 
     def owner(self, ):
         """
@@ -101,7 +101,7 @@ class DendronMgr:
 
     def registerDendronWithStakeAllocation(self, netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort):
         """
-        Call registerDendronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort)
+        Call registerNeuronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :param stakeAmount: uint256 (solidity name: 'stakeAmount')
         :param isValidatorRole: bool (solidity name: 'isValidatorRole')
@@ -111,7 +111,7 @@ class DendronMgr:
         :param prometheusPort: uint32 (solidity name: 'prometheusPort')
         :return: []
         """
-        return self.contract.functions.registerDendronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
+        return self.contract.functions.registerNeuronWithStakeAllocation(netuid, stakeAmount, isValidatorRole, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
 
     def renounceOwnership(self, ):
         """
@@ -152,7 +152,7 @@ class DendronMgr:
 
     def updateDendronService(self, netuid, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort):
         """
-        Call updateDendronService(netuid, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort)
+        Call updateNeuronService(netuid, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :param axonEndpoint: string (solidity name: 'axonEndpoint')
         :param axonPort: uint32 (solidity name: 'axonPort')
@@ -160,7 +160,7 @@ class DendronMgr:
         :param prometheusPort: uint32 (solidity name: 'prometheusPort')
         :return: []
         """
-        return self.contract.functions.updateDendronService(netuid, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
+        return self.contract.functions.updateNeuronService(netuid, axonEndpoint, axonPort, prometheusEndpoint, prometheusPort).call()
 
     def updateStakeAllocation(self, netuid, account, newStake):
         """
@@ -174,17 +174,17 @@ class DendronMgr:
 
     def deregisterDendron(self, netuid):
         """
-        Call deregisterDendron(netuid)
+        Call deregisterNeuron(netuid) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :return: []
         """
-        return self.contract.functions.deregisterDendron(netuid).call()
+        return self.contract.functions.deregisterNeuron(netuid).call()
 
     def dendrons(self, netuid, account):
         """
-        Call dendrons(netuid, account)
+        Call neurons(netuid, account) - keeping old ABI function name for compatibility
         :param netuid: uint16 (solidity name: 'netuid')
         :param account: address (solidity name: 'account')
         :return: [{'internalType': 'struct SubnetTypes.DendronInfo', 'name': '', 'type': 'tuple'}]
         """
-        return self.contract.functions.dendrons(netuid, account).call()
+        return self.contract.functions.neurons(netuid, account).call()

@@ -98,16 +98,40 @@ def subnet_params(
 def user_subnets(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Subnet manager contract address"),
-    user: str = typer.Option(..., help="User address to query"),
+    sender: str = typer.Option(..., help="Wallet name (username) to query"),
 ):
-    """Query all subnets for a user"""
+    """Query all subnets for a user by wallet name"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "subnet_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = sender
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(sender, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Wallet '{sender}' address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {sender}")
+            raise typer.Exit(1)
+    
     subnet_mgr = load_subnet_mgr(contract, rpc)
-    print(f"[green]User Subnets: {subnet_mgr.getUserSubnets(user)}")
+    try:
+        user_subnets_list = subnet_mgr.getUserSubnets(address)
+        if user_subnets_list:
+            print(f"[green]User '{sender}' ({address}) created subnets:")
+            for i, netuid in enumerate(user_subnets_list, 1):
+                print(f"[green]  {i}. Subnet ID: {netuid}")
+        else:
+            print(f"[yellow]User '{sender}' ({address}) has not created any subnets yet")
+    except Exception as e:
+        print(f"[red]Failed to get user subnets: {e}")
+        raise typer.Exit(1)
 
 @subnet_app.command()
 def total_networks(

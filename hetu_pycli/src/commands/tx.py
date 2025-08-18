@@ -13,7 +13,7 @@ def send(
     sender: str = typer.Option(..., help="Wallet name or address (local keystore)"),
     to: str = typer.Option(..., help="Recipient address"),
     value: float = typer.Option(..., help="Transfer amount (HETU)"),
-    rpc: str = typer.Option(None, help="Ethereum node RPC URL"),
+    rpc: str = typer.Option(None, help="Ethereum node RPC URL (optional, uses default from config if not provided)"),
     wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
     password: str = typer.Option(None, help="Password for keystore (prompt if not set)"),
 ):
@@ -54,7 +54,7 @@ def send_by_direct_key(
     private_key: str = typer.Option(..., help="Sender private key"),
     to: str = typer.Option(..., help="Recipient address"),
     value: float = typer.Option(..., help="Transfer amount (HETU)"),
-    rpc: str = typer.Option(None, help="Ethereum node RPC URL"),
+    rpc: str = typer.Option(None, help="Ethereum node RPC URL (optional, uses default from config if not provided)"),
 ):
     """Send HETU transfer directly by private key."""
     config = getattr(ctx, "obj", {}) or {}
