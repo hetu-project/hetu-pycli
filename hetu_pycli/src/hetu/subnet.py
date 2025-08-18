@@ -247,6 +247,11 @@ def register_network(
     
     # Now register the network
     print(f"[yellow]Registering network '{name}'...")
+    
+    # Get the next netuid before registration
+    next_netuid_before = subnet_mgr.getNextNetuid()
+    print(f"[yellow]Next netuid before registration: {next_netuid_before}")
+    
     nonce = subnet_mgr.web3.eth.get_transaction_count(from_address)
     tx = subnet_mgr.contract.functions.registerNetwork(name, description, token_name, token_symbol).build_transaction(
         {
@@ -263,6 +268,17 @@ def register_network(
     receipt = subnet_mgr.web3.eth.wait_for_transaction_receipt(tx_hash)
     if receipt.status == 1:
         print(f"[green]Register network succeeded in block {receipt.blockNumber}")
+        
+        # Get the created subnet ID - it should be the current nextNetuid
+        created_netuid = next_netuid_before
+        print(f"[green]✅ Network '{name}' successfully created!")
+        print(f"[green]📋 Subnet ID: {created_netuid}")
+        print(f"[green]🔗 Transaction: {tx_hash.hex()}")
+        print(f"[green]📦 Block: {receipt.blockNumber}")
+        print(f"[yellow]💡 Next steps:")
+        print(f"[yellow]   1. Activate the subnet: hetucli subnet activate-subnet --netuid {created_netuid} --sender {sender}")
+        print(f"[yellow]   2. View subnet info: hetucli subnet subnet-info --netuid {created_netuid}")
+        print(f"[yellow]   3. View subnet params: hetucli subnet subnet-params --netuid {created_netuid}")
     else:
         print(f"[red]Register network failed in block {receipt.blockNumber}, receipt {receipt}")
 

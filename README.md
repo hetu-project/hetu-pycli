@@ -134,9 +134,10 @@ hetucli wallet balance test0
 hetucli whetu deposit  --sender test0 --value  1000
 hetucli wallet balance test0
 hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+# This will return the created subnet ID (netuid) after successful registration
 
-# Activate the subnet
-hetucli subnet activate-subnet --netuid <netuid> --sender test0
+# Activate the subnet using the returned netuid
+hetucli subnet activate-subnet --netuid <returned_netuid> --sender test0
 
 
 ```bash
@@ -169,6 +170,13 @@ hetucli dendron get-user-role --netuid 1 --user test0
 hetucli subnet user-subnets --sender test0
 ```
 
+#### Validator Scoring (Weights)
+
+```bash
+# Quick score command for testing (direct input)
+hetucli weights quick-score --sender test0 --netuid 1 --targets "0x1234...,0x5678..." --scores "500000,750000"
+```
+
 #### Trading Subnet Tokens
 
 ```bash
@@ -177,25 +185,6 @@ hetucli c set amm_address <amm_pool_address>
 hetucli amm pool-info
 hetucli whetu approve --spender 0xa16E02E87b7454126E5E10d957A927A7F5B5d2be  --value 100 --sender test0
 hetucli amm swap-hetu-for-alpha --hetu-amount-in  100 --alpha-amount-out-min 0   --sender test0 --to <to-address>
-```
-
-#### Validator Scoring (Weights)
-
-```bash
-# Set contract address
-hetucli c set weights_address <weights_contract_address>
-
-# Create a weights template file
-hetucli weights create-weights-template --output-file my_weights.json
-
-# Set weights for nodes in a subnet (validator only)
-hetucli weights set-weights --sender test0 --netuid 1 --weights-file my_weights.json
-
-# Quick score command for testing (direct input)
-hetucli weights quick-score --sender test0 --netuid 1 --targets "0x1234...,0x5678..." --scores "500000,750000"
-
-# Query weights for a specific validator-destination pair
-hetucli weights get-weights --netuid 1 --validator 0x1234... --dest 0x5678...
 ```
 
 ### WHETU
