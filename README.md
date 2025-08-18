@@ -159,7 +159,12 @@ hetucli subnet subnet-info --netuid <netuid>
 ```bash
 hetucli stake add-stake --sender test0 --amount 100
 hetucli stake total-staked
-hetucli dendron regist --sender test0 --netuid 1 --is-validator-role  --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Register as validator dendron
+hetucli dendron regist --sender test0 --netuid 1 --is-validator-role --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Register as regular dendron (non-validator)
+hetucli dendron regist --sender test0 --netuid 1 --no-validator-role --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
 ```
 
 #### Trading Subnet Tokens
