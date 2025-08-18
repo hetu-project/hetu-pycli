@@ -117,7 +117,7 @@ Set the contract address
 hetucli c set whetu_address <address>
 hetucli c set staking_address <address>
 hetucli c set subnet_address <address>
-hetucli c set neuron_address <address>
+hetucli c set dendron_address <address>
 hetucli c set amm_address <address>
 ```
 
@@ -127,13 +127,18 @@ hetucli c set amm_address <address>
 
 ```bash
 hetucli w import <private-key> --name test0
+hetucli hetu balance-of test0
 hetucli whetu deposit  --sender test0 --value  1000
 hetucli whetu balance-of  test0
 hetucli subnet get-network-lock-cost
-hetucli whetu approve --spender <subnet_address>  --value 100 --sender test0 
-hetucli subnet update-network-params --network-min-lock 100000000000000000000  --network-rate-limit 1 --lock-reduction-interval 10000  --sender <address>
 hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
 hetucli subnet get-subnet-hyperparams --netuid <netuid>
+
+# Activate the subnet
+hetucli subnet activate-subnet --netuid <netuid> --sender test0
+
+# Verify activation status
+hetucli subnet subnet-info --netuid <netuid>
 ```
 
 #### Activate Subnet
@@ -152,11 +157,9 @@ hetucli subnet subnet-info --netuid <netuid>
 #### Staking and Participation
 
 ```bash
-hetucli whetu approve --spender <stake_address>  --value 100 --sender test0
 hetucli stake add-stake --sender test0 --amount 100
 hetucli stake total-staked
-hetucli stake allocate-to-subnet --netuid 1  --sender test0 --amount 50
-hetucli neuron regist --sender test0 --netuid 1 --is-validator-role  --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+hetucli dendron regist --sender test0 --netuid 1 --is-validator-role  --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
 ```
 
 #### Trading Subnet Tokens
