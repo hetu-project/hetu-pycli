@@ -168,6 +168,9 @@ hetucli dendron get-user-role --netuid 1 --user test0
 
 # Query user's created subnets
 hetucli subnet user-subnets --sender test0
+
+# Update dendron service information (endpoints, ports)
+hetucli dendron update-dendron-service --sender test0 --netuid 1 --axon-endpoint "http://new-node.com" --axon-port 8081 --prometheus-endpoint "http://new-metrics.com" --prometheus-port 9091
 ```
 
 #### Validator Scoring (Weights)
