@@ -537,3 +537,84 @@ def get_user_role(
     except Exception as e:
         print(f"[yellow]User {address} is not registered in subnet {netuid}")
         print(f"[yellow]Status: Not joined") 
+
+@dendron_app.command()
+def update_dendron_service(
+    ctx: typer.Context,
+    contract: str = typer.Option(None, help="Dendron manager contract address"),
+    sender: str = typer.Option(..., help="Sender address (must match keystore address or wallet name)"),
+    wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
+    password: str = typer.Option(None, hide_input=True, help="Keystore password"),
+    netuid: int = typer.Option(..., help="Subnet netuid"),
+    axon_endpoint: str = typer.Option(..., help="New axon endpoint"),
+    axon_port: int = typer.Option(..., help="New axon port (uint32)"),
+    prometheus_endpoint: str = typer.Option(..., help="New prometheus endpoint"),
+    prometheus_port: int = typer.Option(..., help="New prometheus port (uint32)"),
+):
+    """Update dendron service information (endpoints and ports)"""
+    rpc = ctx.obj.get("json_rpc") if ctx.obj else None
+    contract = get_contract_address(ctx, "dendron_address", contract)
+    if not rpc:
+        print("[red]No RPC URL found in config or CLI.")
+        raise typer.Exit(1)
+    
+    config = ctx.obj
+    wallet_path = wallet_path or get_wallet_path(config)
+    keystore = load_keystore(sender, wallet_path)
+    if not password:
+        password = getpass.getpass("Keystore password: ")
+    try:
+        private_key = Account.decrypt(keystore, password)
+    except Exception as e:
+        print(f"[red]Failed to decrypt keystore: {e}")
+        raise typer.Exit(1)
+    
+    mgr = load_dendron_mgr(contract, rpc)
+    from_address = keystore["address"]
+    
+    # Check if the dendron exists and is active
+    try:
+        dendron_info = mgr.getDendronInfo(netuid, from_address)
+        if not dendron_info[2]:  # isActive field
+            print(f"[red]Dendron in subnet {netuid} is not active or doesn't exist")
+            raise typer.Exit(1)
+        print(f"[green]Current dendron info for subnet {netuid}:")
+        print(f"[green]  Axon endpoint: {dendron_info[7]}")  # axonEndpoint
+        print(f"[green]  Axon port: {dendron_info[8]}")      # axonPort
+        print(f"[green]  Prometheus endpoint: {dendron_info[9]}")  # prometheusEndpoint
+        print(f"[green]  Prometheus port: {dendron_info[10]}")     # prometheusPort
+    except Exception as e:
+        print(f"[red]Failed to get dendron info: {e}")
+        raise typer.Exit(1)
+    
+    # Update the service information
+    print(f"[yellow]Updating dendron service information...")
+    print(f"[yellow]New axon endpoint: {axon_endpoint}:{axon_port}")
+    print(f"[yellow]New prometheus endpoint: {prometheus_endpoint}:{prometheus_port}")
+    
+    nonce = mgr.web3.eth.get_transaction_count(from_address)
+    tx = mgr.contract.functions.updateNeuronService(
+        netuid, axon_endpoint, axon_port, prometheus_endpoint, prometheus_port
+    ).build_transaction(
+        {
+            "from": from_address,
+            "nonce": nonce,
+            "gas": 200000,
+            "gasPrice": mgr.web3.eth.gas_price,
+        }
+    )
+    
+    signed = mgr.web3.eth.account.sign_transaction(tx, private_key)
+    tx_hash = mgr.web3.eth.send_raw_transaction(signed.raw_transaction)
+    print(f"[green]Broadcasted update dendron service tx hash: {tx_hash.hex()}")
+    print("[yellow]Waiting for transaction receipt...")
+    
+    receipt = mgr.web3.eth.wait_for_transaction_receipt(tx_hash)
+    if receipt.status == 1:
+        print(f"[green]Update dendron service succeeded in block {receipt.blockNumber}")
+        print(f"[green]✅ Dendron service information updated successfully!")
+        print(f"[green]📋 Subnet: {netuid}")
+        print(f"[green]🔗 Transaction: {tx_hash.hex()}")
+        print(f"[green]📦 Block: {receipt.blockNumber}")
+    else:
+        print(f"[red]Update dendron service failed in block {receipt.blockNumber}, receipt {receipt}") 
