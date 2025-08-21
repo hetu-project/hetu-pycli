@@ -75,14 +75,13 @@ class GlobalStaking:
         """
         return self.contract.functions.claimRewards().call()
 
-    def getAvailableStake(self, user, netuid):
+    def getAvailableStake(self, user):
         """
-        Call getAvailableStake(user, netuid)
+        Call getAvailableStake(user)
         :param user: address (solidity name: 'user')
-        :param netuid: uint16 (solidity name: 'netuid')
         :return: [{'internalType': 'uint256', 'name': '', 'type': 'uint256'}]
         """
-        return self.contract.functions.getAvailableStake(user, netuid).call()
+        return self.contract.functions.getAvailableStake(user).call()
 
     def getEffectiveStake(self, user, netuid):
         """

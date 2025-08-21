@@ -38,21 +38,45 @@ def get_contract_address(ctx, cli_contract_key: str, param_contract: str):
 def total_staked(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Staking contract address"),
+    user: str = typer.Argument(None, help="User address or wallet name to query (optional, defaults to owner)"),
 ):
-    """Query total staked HETU"""
+    """Query total staked HETU for a user"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "staking_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     staking = load_staking(contract, rpc)
-    all_staking = staking.getTotalStaked()
+    
+    # 如果没有指定用户，使用合约所有者
+    if not user:
+        user = staking.owner()
+        print(f"[yellow]No user specified, using contract owner: {user}")
+    else:
+        # 如果指定了用户，检查是否是钱包名称并转换为地址
+        address = user
+        config = ctx.obj
+        wallet_path = get_wallet_path(config)
+        if not (address.startswith('0x') and len(address) == 42):
+            try:
+                keystore = load_keystore(user, wallet_path)
+                address = keystore.get("address")
+                print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+            except Exception:
+                print(f"[red]Wallet not found: {user}")
+                raise typer.Exit(1)
+        user = address
+    
+    # 获取用户的质押信息
+    stake_info = staking.getStakeInfo(user)
+    total_staked = stake_info[0]  # totalStaked 是第一个元素
+    
     whetu = staking.hetuToken()
     erc20 = load_erc20(whetu, rpc)
     decimals = erc20.decimals()
-    value = all_staking / (10 ** decimals)
+    value = total_staked / (10 ** decimals)
     value_str = f"{value:,.{decimals}f}".rstrip('0').rstrip('.')
-    print(f"[green]Total Staked: {value_str} (raw: {all_staking}, decimals: {decimals})")
+    print(f"[green]Total Staked for {user}: {value_str} (raw: {total_staked}, decimals: {decimals})")
 
 @staking_app.command()
 def stake_info(
@@ -67,6 +91,21 @@ def stake_info(
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Stake Info: {staking.getStakeInfo(user)}")
 
 @staking_app.command()
@@ -78,12 +117,13 @@ def add_stake(
     password: str = typer.Option(None, hide_input=True, help="Keystore password"),
     amount: float = typer.Option(..., help="Amount to stake (in HETU)"),
 ):
-    """Add global stake (stake HETU)"""
+    """Add global stake (stake HETU) with automatic WHETU approval"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "staking_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
     config = ctx.obj
     wallet_path = wallet_path or get_wallet_path(config)
     keystore = load_keystore(sender, wallet_path)
@@ -94,10 +134,68 @@ def add_stake(
     except Exception as e:
         print(f"[red]Failed to decrypt keystore: {e}")
         raise typer.Exit(1)
-    staking = load_staking(contract, rpc)
+    
     from_address = keystore["address"]
-    nonce = staking.web3.eth.get_transaction_count(from_address)
+    
+    # Load staking contract
+    staking = load_staking(contract, rpc)
+    
+    # Load WHETU contract to check balance and approve
+    from hetu_pycli.src.hetu.whetu import load_whetu
+    whetu_contract = get_contract_address(ctx, "whetu_address", None)
+    whetu = load_whetu(whetu_contract, rpc)
+    
+    # Check WHETU balance
+    print(f"[yellow]Checking WHETU balance...")
+    whetu_balance_raw = whetu.balanceOf(from_address)
+    decimals = whetu.decimals()
+    whetu_balance_human = whetu_balance_raw / (10 ** decimals)
     amount_wei = staking.web3.to_wei(amount, "ether")
+    
+    print(f"[green]Current WHETU balance: {whetu_balance_human} HETU")
+    print(f"[green]Amount to stake: {amount} HETU")
+    
+    if whetu_balance_raw < amount_wei:
+        print(f"[red]Insufficient WHETU balance!")
+        print(f"[red]Required: {amount} HETU")
+        print(f"[red]Available: {whetu_balance_human} HETU")
+        print(f"[yellow]Please deposit more WHETU using: hetucli whetu deposit --sender {sender} --value {amount}")
+        raise typer.Exit(1)
+    
+    print(f"[green]WHETU balance sufficient: {whetu_balance_human} HETU")
+    
+    # Check current allowance for staking contract
+    print(f"[yellow]Checking WHETU allowance for staking...")
+    current_allowance = whetu.allowance(from_address, contract)
+    current_allowance_human = current_allowance / (10 ** decimals)
+    
+    if current_allowance < amount_wei:
+        print(f"[yellow]Insufficient allowance. Approving {amount} WHETU for staking...")
+        nonce = whetu.web3.eth.get_transaction_count(from_address)
+        approve_tx = whetu.contract.functions.approve(contract, amount_wei).build_transaction(
+            {
+                "from": from_address,
+                "nonce": nonce,
+                "gas": 100000,
+                "gasPrice": whetu.web3.eth.gas_price,
+            }
+        )
+        signed_approve = whetu.web3.eth.account.sign_transaction(approve_tx, private_key)
+        approve_tx_hash = whetu.web3.eth.send_raw_transaction(signed_approve.raw_transaction)
+        print(f"[green]Broadcasted approve tx hash: {approve_tx_hash.hex()}")
+        print("[yellow]Waiting for approve transaction receipt...")
+        approve_receipt = whetu.web3.eth.wait_for_transaction_receipt(approve_tx_hash)
+        if approve_receipt.status == 1:
+            print(f"[green]Approve succeeded in block {approve_receipt.blockNumber}")
+        else:
+            print(f"[red]Approve failed in block {approve_receipt.blockNumber}")
+            raise typer.Exit(1)
+    else:
+        print(f"[green]Sufficient allowance already exists: {current_allowance_human} HETU")
+    
+    # Now add the stake
+    print(f"[yellow]Adding {amount} HETU to global stake...")
+    nonce = staking.web3.eth.get_transaction_count(from_address)
     tx = staking.contract.functions.addGlobalStake(amount_wei).build_transaction(
         {
             "from": from_address,
@@ -113,6 +211,7 @@ def add_stake(
     receipt = staking.web3.eth.wait_for_transaction_receipt(tx_hash)
     if receipt.status == 1:
         print(f"[green]Add stake succeeded in block {receipt.blockNumber}")
+        print(f"[green]Successfully added {amount} HETU to global stake")
     else:
         print(f"[red]Add stake failed in block {receipt.blockNumber}")
 
@@ -215,14 +314,29 @@ def available_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query available stake for a user in a subnet"""
+    """Query available stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
-    print(f"[green]Available Stake: {staking.getAvailableStake(user, netuid)}")
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
+    print(f"[green]Available Stake: {staking.getAvailableStake(user)}")
 
 @staking_app.command()
 def effective_stake(
@@ -231,13 +345,28 @@ def effective_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query effective stake for a user in a subnet"""
+    """Query effective stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Effective Stake: {staking.getEffectiveStake(user, netuid)}")
 
 @staking_app.command()
@@ -247,13 +376,28 @@ def locked_stake(
     user: str = typer.Option(..., help="User address to query"),
     netuid: int = typer.Option(..., help="Subnet netuid"),
 ):
-    """Query locked stake for a user in a subnet"""
+    """Query locked stake for a user in a specific subnet"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Locked Stake: {staking.getLockedStake(user, netuid)}")
 
 @staking_app.command()
@@ -318,4 +462,145 @@ def subnet_allocation(
         raise typer.Exit(1)
     contract = get_contract_address(ctx, "staking_address", contract)
     staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
     print(f"[green]Subnet Allocation: {staking.getSubnetAllocation(user, netuid)}") 
+
+@staking_app.command()
+def approve(
+    ctx: typer.Context,
+    contract: str = typer.Option(None, help="Staking contract address"),
+    value: float = typer.Option(..., help="Amount to approve (in HETU)"),
+    sender: str = typer.Option(..., help="Sender address (must match keystore address or wallet name)"),
+    wallet_path: str = typer.Option(None, help="Wallet path (default from config)"),
+    password: str = typer.Option(None, hide_input=True, help="Keystore password"),
+):
+    """Approve WHETU allowance for staking contract"""
+    rpc = ctx.obj.get("json_rpc") if ctx.obj else None
+    staking_contract = get_contract_address(ctx, "staking_address", contract)
+    if not rpc:
+        print("[red]No RPC URL found in config or CLI.")
+        raise typer.Exit(1)
+    
+    config = ctx.obj
+    wallet_path = wallet_path or get_wallet_path(config)
+    keystore = load_keystore(sender, wallet_path)
+    if not password:
+        password = getpass.getpass("Keystore password: ")
+    try:
+        private_key = Account.decrypt(keystore, password)
+    except Exception as e:
+        print(f"[red]Failed to decrypt keystore: {e}")
+        raise typer.Exit(1)
+    
+    # Load staking contract to get WHETU token address
+    staking = load_staking(staking_contract, rpc)
+    whetu_token_address = staking.hetuToken()
+    
+    # Load WHETU contract to perform approve
+    from hetu_pycli.src.hetu.whetu import load_whetu
+    whetu_contract = get_contract_address(ctx, "whetu_address", None)
+    whetu = load_whetu(whetu_contract, rpc)
+    
+    decimals = whetu.decimals()
+    value_raw = int(value * (10 ** decimals))
+    
+    print(f"[yellow]Approving {value} WHETU for staking contract {staking_contract}...")
+    print(f"[yellow]WHETU token address: {whetu_token_address}")
+    
+    from_address = keystore["address"]
+    nonce = whetu.web3.eth.get_transaction_count(from_address)
+    
+    approve_tx = whetu.contract.functions.approve(staking_contract, value_raw).build_transaction(
+        {
+            "from": from_address,
+            "nonce": nonce,
+            "gas": 100000,
+            "gasPrice": whetu.web3.eth.gas_price,
+        }
+    )
+    
+    signed_approve = whetu.web3.eth.account.sign_transaction(approve_tx, private_key)
+    approve_tx_hash = whetu.web3.eth.send_raw_transaction(signed_approve.raw_transaction)
+    print(f"[green]Broadcasted approve tx hash: {approve_tx_hash.hex()}")
+    print("[yellow]Waiting for transaction receipt...")
+    
+    approve_receipt = whetu.web3.eth.wait_for_transaction_receipt(approve_tx_hash)
+    if approve_receipt.status == 1:
+        print(f"[green]Approve succeeded in block {approve_receipt.blockNumber}")
+        print(f"[green]You can now stake up to {value} WHETU using: hetucli stake add-stake --sender {sender} --amount {value}")
+    else:
+        print(f"[red]Approve failed in block {approve_receipt.blockNumber}") 
+
+@staking_app.command()
+def debug_stake_info(
+    ctx: typer.Context,
+    contract: str = typer.Option(None, help="Staking contract address"),
+    user: str = typer.Option(..., help="User address or wallet name to query"),
+):
+    """Debug: Show raw stake info data structure"""
+    rpc = ctx.obj.get("json_rpc") if ctx.obj else None
+    if not rpc:
+        print("[red]No RPC URL found in config or CLI.")
+        raise typer.Exit(1)
+    contract = get_contract_address(ctx, "staking_address", contract)
+    staking = load_staking(contract, rpc)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = user
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(user, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Converted wallet name '{user}' to address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {user}")
+            raise typer.Exit(1)
+        user = address
+    
+    print(f"[yellow]Debug: Raw getStakeInfo output for {user}")
+    print(f"[yellow]Contract address: {contract}")
+    
+    try:
+        stake_info = staking.getStakeInfo(user)
+        print(f"[green]Raw stake_info: {stake_info}")
+        print(f"[green]Type: {type(stake_info)}")
+        print(f"[green]Length: {len(stake_info)}")
+        
+        for i, item in enumerate(stake_info):
+            print(f"[green]  [{i}]: {item} (type: {type(item)})")
+        
+        # Also show the individual values we're using
+        if len(stake_info) >= 3:
+            total_staked = stake_info[0]
+            total_allocated = stake_info[1]
+            available_for_allocation = stake_info[2]
+            
+            print(f"\n[yellow]Parsed values:")
+            print(f"[green]  totalStaked[0]: {total_staked} wei = {staking.web3.from_wei(total_staked, 'ether')} HETU")
+            print(f"[green]  totalAllocated[1]: {total_allocated} wei = {staking.web3.from_wei(total_allocated, 'ether')} HETU")
+            print(f"[green]  availableForAllocation[2]: {available_for_allocation} wei = {staking.web3.from_wei(available_for_allocation, 'ether')} HETU")
+            
+            # Calculate what we expect
+            expected_available = total_staked - total_allocated
+            print(f"[yellow]Expected available: {total_staked} - {total_allocated} = {expected_available} wei = {staking.web3.from_wei(expected_available, 'ether')} HETU")
+            
+    except Exception as e:
+        print(f"[red]Error calling getStakeInfo: {e}")
+        import traceback
+        traceback.print_exc() 

@@ -98,16 +98,40 @@ def subnet_params(
 def user_subnets(
     ctx: typer.Context,
     contract: str = typer.Option(None, help="Subnet manager contract address"),
-    user: str = typer.Option(..., help="User address to query"),
+    sender: str = typer.Option(..., help="Wallet name (username) to query"),
 ):
-    """Query all subnets for a user"""
+    """Query all subnets for a user by wallet name"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "subnet_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
+    # 检查是否是钱包名称并转换为地址
+    address = sender
+    config = ctx.obj
+    wallet_path = get_wallet_path(config)
+    if not (address.startswith('0x') and len(address) == 42):
+        try:
+            keystore = load_keystore(sender, wallet_path)
+            address = keystore.get("address")
+            print(f"[yellow]Wallet '{sender}' address: {address}")
+        except Exception:
+            print(f"[red]Wallet not found: {sender}")
+            raise typer.Exit(1)
+    
     subnet_mgr = load_subnet_mgr(contract, rpc)
-    print(f"[green]User Subnets: {subnet_mgr.getUserSubnets(user)}")
+    try:
+        user_subnets_list = subnet_mgr.getUserSubnets(address)
+        if user_subnets_list:
+            print(f"[green]User '{sender}' ({address}) created subnets:")
+            for i, netuid in enumerate(user_subnets_list, 1):
+                print(f"[green]  {i}. Subnet ID: {netuid}")
+        else:
+            print(f"[yellow]User '{sender}' ({address}) has not created any subnets yet")
+    except Exception as e:
+        print(f"[red]Failed to get user subnets: {e}")
+        raise typer.Exit(1)
 
 @subnet_app.command()
 def total_networks(
@@ -137,12 +161,13 @@ def register_network(
     token_name: str = typer.Option(..., help="Token name"),
     token_symbol: str = typer.Option(..., help="Token symbol"),
 ):
-    """Register a new network"""
+    """Register a new network with automatic cost checking and approval"""
     rpc = ctx.obj.get("json_rpc") if ctx.obj else None
     contract = get_contract_address(ctx, "subnet_address", contract)
     if not rpc:
         print("[red]No RPC URL found in config or CLI.")
         raise typer.Exit(1)
+    
     config = ctx.obj
     wallet_path = wallet_path or get_wallet_path(config)
     keystore = load_keystore(sender, wallet_path)
@@ -153,8 +178,80 @@ def register_network(
     except Exception as e:
         print(f"[red]Failed to decrypt keystore: {e}")
         raise typer.Exit(1)
-    subnet_mgr = load_subnet_mgr(contract, rpc)
+    
     from_address = keystore["address"]
+    
+    # Load subnet manager and get network lock cost
+    print("[yellow]Checking network lock cost...")
+    subnet_mgr = load_subnet_mgr(contract, rpc)
+    lock_cost_raw = subnet_mgr.getNetworkLockCost()
+    whetu_token_address = subnet_mgr.hetuToken()
+    
+    # Load WHETU contract to check balance and approve
+    from hetu_pycli.src.hetu.whetu import load_whetu
+    whetu_contract = get_contract_address(ctx, "whetu_address", None)
+    whetu = load_whetu(whetu_contract, rpc)
+    
+    # Get decimals and convert to human readable format
+    decimals = whetu.decimals()
+    lock_cost_human = lock_cost_raw / (10 ** decimals)
+    lock_cost_str = f"{lock_cost_human:,.{decimals}f}".rstrip('0').rstrip('.')
+    print(f"[green]Network lock cost: {lock_cost_str} WHETU")
+    
+    # Check WHETU balance
+    print("[yellow]Checking WHETU balance...")
+    whetu_balance_raw = whetu.balanceOf(from_address)
+    whetu_balance_human = whetu_balance_raw / (10 ** decimals)
+    whetu_balance_str = f"{whetu_balance_human:,.{decimals}f}".rstrip('0').rstrip('.')
+    print(f"[green]Current WHETU balance: {whetu_balance_str} WHETU")
+    
+    # Check if balance is sufficient
+    if whetu_balance_raw < lock_cost_raw:
+        print(f"[red]Insufficient WHETU balance!")
+        print(f"[red]Required: {lock_cost_str} WHETU")
+        print(f"[red]Available: {whetu_balance_str} WHETU")
+        print(f"[yellow]Please deposit more WHETU using: hetucli whetu deposit --sender {sender} --value {lock_cost_human}")
+        raise typer.Exit(1)
+    
+    # Check current allowance
+    print("[yellow]Checking current allowance...")
+    current_allowance = whetu.allowance(from_address, contract)
+    current_allowance_human = current_allowance / (10 ** decimals)
+    current_allowance_str = f"{current_allowance_human:,.{decimals}f}".rstrip('0').rstrip('.')
+    print(f"[green]Current allowance: {current_allowance_str} WHETU")
+    
+    # Approve if needed
+    if current_allowance < lock_cost_raw:
+        print(f"[yellow]Insufficient allowance. Approving {lock_cost_str} WHETU...")
+        nonce = whetu.web3.eth.get_transaction_count(from_address)
+        approve_tx = whetu.contract.functions.approve(contract, lock_cost_raw).build_transaction(
+            {
+                "from": from_address,
+                "nonce": nonce,
+                "gas": 100000,
+                "gasPrice": whetu.web3.eth.gas_price,
+            }
+        )
+        signed_approve = whetu.web3.eth.account.sign_transaction(approve_tx, private_key)
+        approve_tx_hash = whetu.web3.eth.send_raw_transaction(signed_approve.raw_transaction)
+        print(f"[green]Broadcasted approve tx hash: {approve_tx_hash.hex()}")
+        print("[yellow]Waiting for approve transaction receipt...")
+        approve_receipt = whetu.web3.eth.wait_for_transaction_receipt(approve_tx_hash)
+        if approve_receipt.status == 1:
+            print(f"[green]Approve succeeded in block {approve_receipt.blockNumber}")
+        else:
+            print(f"[red]Approve failed in block {approve_receipt.blockNumber}")
+            raise typer.Exit(1)
+    else:
+        print(f"[green]Sufficient allowance already exists: {current_allowance_str} WHETU")
+    
+    # Now register the network
+    print(f"[yellow]Registering network '{name}'...")
+    
+    # Get the next netuid before registration
+    next_netuid_before = subnet_mgr.getNextNetuid()
+    print(f"[yellow]Next netuid before registration: {next_netuid_before}")
+    
     nonce = subnet_mgr.web3.eth.get_transaction_count(from_address)
     tx = subnet_mgr.contract.functions.registerNetwork(name, description, token_name, token_symbol).build_transaction(
         {
@@ -171,6 +268,17 @@ def register_network(
     receipt = subnet_mgr.web3.eth.wait_for_transaction_receipt(tx_hash)
     if receipt.status == 1:
         print(f"[green]Register network succeeded in block {receipt.blockNumber}")
+        
+        # Get the created subnet ID - it should be the current nextNetuid
+        created_netuid = next_netuid_before
+        print(f"[green]✅ Network '{name}' successfully created!")
+        print(f"[green]📋 Subnet ID: {created_netuid}")
+        print(f"[green]🔗 Transaction: {tx_hash.hex()}")
+        print(f"[green]📦 Block: {receipt.blockNumber}")
+        print(f"[yellow]💡 Next steps:")
+        print(f"[yellow]   1. Activate the subnet: hetucli subnet activate-subnet --netuid {created_netuid} --sender {sender}")
+        print(f"[yellow]   2. View subnet info: hetucli subnet subnet-info --netuid {created_netuid}")
+        print(f"[yellow]   3. View subnet params: hetucli subnet subnet-params --netuid {created_netuid}")
     else:
         print(f"[red]Register network failed in block {receipt.blockNumber}, receipt {receipt}")
 
@@ -454,6 +562,20 @@ def network_last_lock_block(
         raise typer.Exit(1)
     subnet_mgr = load_subnet_mgr(contract, rpc)
     print(f"[green]networkLastLockBlock: {subnet_mgr.networkLastLockBlock()}")
+
+@subnet_app.command()
+def network_rate_limit(
+    ctx: typer.Context,
+    contract: str = typer.Option(None, help="Subnet manager contract address"),
+):
+    """Query networkRateLimit"""
+    rpc = ctx.obj.get("json_rpc") if ctx.obj else None
+    contract = get_contract_address(ctx, "subnet_address", contract)
+    if not rpc:
+        print("[red]No RPC URL found in config or CLI.")
+        raise typer.Exit(1)
+    subnet_mgr = load_subnet_mgr(contract, rpc)
+    print(f"[green]networkRateLimit: {subnet_mgr.networkRateLimit()}")
 
 @subnet_app.command()
 def owner_subnets(

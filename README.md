@@ -97,12 +97,18 @@ hetucli --help
 ### Wallet management
 ```bash
 hetucli wallet create
-hetucli wallet balance <address> --rpc <rpc_url>
+hetucli wallet balance <wallet_name>
+hetucli wallet list
+hetucli wallet import <private-key> --name <wallet_name>
 ```
 
 ### Transfer
 ```bash
-hetucli tx send --private-key <key> --to <address> --value <hetu> --rpc <rpc_url>
+# Using wallet name (recommended)
+hetucli tx send --sender <wallet_name> --to <address> --value <hetu>
+
+# Direct private key usage (not recommended, private key will be exposed in command history)
+hetucli tx send-dk --private-key <key> --to <address> --value <hetu>
 ```
 
 ### Configuration
@@ -113,8 +119,9 @@ Set the contract address
 hetucli c set whetu_address <address>
 hetucli c set staking_address <address>
 hetucli c set subnet_address <address>
-hetucli c set neuron_address <address>
+hetucli c set dendron_address <address>
 hetucli c set amm_address <address>
+hetucli c set weights_address <address>
 ```
 
 ### Main Process(New,Staking,Swap)
@@ -123,21 +130,54 @@ hetucli c set amm_address <address>
 
 ```bash
 hetucli w import <private-key> --name test0
+hetucli wallet balance test0
 hetucli whetu deposit  --sender test0 --value  1000
-hetucli whetu balance-of  test0
-hetucli subnet get-network-lock-cost
-hetucli whetu approve --spender <subnet_address>  --value 100 --sender test0 
-hetucli subnet update-network-params --network-min-lock 100000000000000000000  --network-rate-limit 1 --lock-reduction-interval 10000  --sender <address>
-hetucli subnet regist --sender test0 --name "AI Vision" --description "Computre vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+hetucli wallet balance test0
+hetucli subnet regist --sender test0 --name "AI Vision" --description "Computer vision and image processing network" --token-name "VISION" --token-symbol "VIS"
+# This will return the created subnet ID (netuid) after successful registration
+
+# Activate the subnet using the returned netuid
+hetucli subnet activate-subnet --netuid <returned_netuid> --sender test0
+
+
+```bash
+# Check subnet status
+hetucli subnet subnet-info --netuid <netuid>
+
+# Activate the subnet
+hetucli subnet activate-subnet --netuid <netuid> --sender <wallet_name>
+
+# Verify activation status
+hetucli subnet subnet-info --netuid <netuid>
 ```
+
 #### Staking and Participation
 
 ```bash
-hetucli whetu approve --spender <stake_address>  --value 100 --sender test0
 hetucli stake add-stake --sender test0 --amount 100
 hetucli stake total-staked
-hetucli stake allocate-to-subnet --netuid 1  --sender test0 --amount 50
-hetucli neuron regist --sender test0 --netuid 1 --is-validator-role  --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Register as validator dendron
+hetucli dendron regist --sender test0 --netuid 1 --is-validator-role --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Register as regular dendron (non-validator)
+hetucli dendron regist --sender test0 --netuid 1 --no-validator-role --axon-endpoint "http://my-node.com" --axon-port 8080 --prometheus-endpoint "http://my-metrics.com" --prometheus-port 9090
+
+# Check user role in subnet
+hetucli dendron get-user-role --netuid 1 --user test0
+
+# Query user's created subnets
+hetucli subnet user-subnets --sender test0
+
+# Update dendron service information (endpoints, ports)
+hetucli dendron update-dendron-service --sender test0 --netuid 1 --axon-endpoint "http://new-node.com" --axon-port 8081 --prometheus-endpoint "http://new-metrics.com" --prometheus-port 9091
+```
+
+#### Validator Scoring (Weights)
+
+```bash
+# Quick score command for testing (direct input)
+hetucli weights quick-score --sender test0 --netuid 1 --targets "0x1234...,0x5678..." --scores "500000,750000"
 ```
 
 #### Trading Subnet Tokens
@@ -153,25 +193,26 @@ hetucli amm swap-hetu-for-alpha --hetu-amount-in  100 --alpha-amount-out-min 0  
 ### WHETU
 
 ```bash
-hetucli whetu deposit --contract <address> --sender <address> --value <amount>
-hetucli whetu withdraw --contract <address> --sender <address> --amount <amount>
-hetucli whetu balance-of --contract <address> --account <address>
-hetucli whetu transfer --contract <address> --to <address> --value <amount> --sender <address>
-hetucli whetu approve --contract <address> --spender <address> --value <amount> --sender <address>
-hetucli whetu total-eth --contract <address>
-hetucli whetu total-supply --contract <address>
-hetucli whetu nonces --contract <address> --owner <address>
+hetucli whetu deposit --sender <wallet_name> --value <amount>
+hetucli whetu withdraw --sender <wallet_name> --amount <amount>
+hetucli wallet balance <wallet_name>
+hetucli whetu transfer --to <address> --value <amount> --sender <wallet_name>
+hetucli whetu approve --spender <address> --value <amount> --sender <wallet_name>
+hetucli whetu total-eth
+hetucli whetu total-supply
+hetucli whetu nonces --owner <address>
 ```
 
 ### Staking, Subnet, Swap
 
 ```bash
-hetucli stake total-staked --contract <address>
-hetucli stake add-stake --contract <address> --sender <address> --amount <amount>
-hetucli subnet next-netuid --contract <address>
-hetucli subnet register-network --contract <address> --sender <address> --name ... --description ... --token-name ... --token-symbol ...
-hetucli amm alpha-price --contract <address>
-hetucli amm swap-hetu-for-alpha --contract <address> --sender <address> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
+hetucli stake total-staked
+hetucli stake add-stake --sender <wallet_name> --amount <amount>
+hetucli subnet next-netuid
+hetucli subnet regist --sender <wallet_name> --name <name> --description <description> --token-name <token_name> --token-symbol <token_symbol>
+hetucli subnet get-subnet-hyperparams --netuid <netuid>
+hetucli amm alpha-price
+hetucli amm swap-hetu-for-alpha --sender <wallet_name> --hetu-amount-in <amount> --alpha-amount-out-min <amount> --to <address>
 ```
 
 ### Contract call
